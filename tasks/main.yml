@@ -1,0 +1,6 @@
+---
+- name: Process each item in databases
+  include_tasks: db.yml
+  loop: '{{ databases }}'
+  loop_control:
+    loop_var: db_item

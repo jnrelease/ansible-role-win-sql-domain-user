@@ -1,0 +1,38 @@
+---
+- name: Create database login
+  shell: |
+    $server = "{{ db_item.server }}"
+    $admin_user = "{{ db_admin_user }}"
+    $admin_pass = ConvertTo-SecureString -String "{{ db_admin_pass }}" -AsPlainText -Force
+    $admin_cred = New-Object System.Management.Automation.PSCredential ($admin_user, $admin_pass)
+    $user = "{{ item.name }}"
+    New-DbaLogin -SqlInstance $server -Login $user -SqlCredential $admin_cred -Verbose
+  args:
+    executable: /usr/bin/pwsh
+  with_items: '{{ db_item.users }}'
+
+- name: Create database user
+  shell: |
+    $server = "{{ db_item.server }}"
+    $admin_user = "{{ db_admin_user }}"
+    $admin_pass = ConvertTo-SecureString -String "{{ db_admin_pass }}" -AsPlainText -Force
+    $admin_cred = New-Object System.Management.Automation.PSCredential ($admin_user, $admin_pass)
+    $db = "{{ db_item.name }}"
+    $user = "{{ item.name }}"
+    New-DbaDbUser -SqlInstance $server -Database $db -Login $user -SqlCredential $admin_cred -Verbose
+  args:
+    executable: /usr/bin/pwsh
+  with_items: '{{ db_item.users }}'
+
+- name: Add database user to database role
+  shell: |
+    $server = "{{ db_item.server }}"
+    $admin_user = "{{ db_admin_user }}"
+    $admin_pass = ConvertTo-SecureString -String "{{ db_admin_pass }}" -AsPlainText -Force
+    $admin_cred = New-Object System.Management.Automation.PSCredential ($admin_user, $admin_pass)
+    $db = "{{ db_item.name }}"
+    $user = "{{ item.name }}"
+    Add-DbaDbRoleMember -SqlInstance $server -Database $db -Role {{ item.role | map('to_json') | join(', ') }} -User $user -Confirm:$false -SqlCredential $admin_cred -Verbose
+  args:
+    executable: /usr/bin/pwsh
+  with_items: '{{ db_item.users }}'
